@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
 
     public void placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
@@ -43,9 +43,11 @@ public class OrderService {
             .toList();
 
         String skuCodesParam = String.join(",", skuCodes);
+        log.info("Calling inventory service for skuCodes: {}", skuCodesParam);
 
-        InventoryResponse[] inventoryResponseArray = webClient.get()
-            .uri("http://localhost:8082/api/inventory?skuCode={skuCodes}", skuCodesParam)
+        // ✅ FIX: Use service name instead of localhost
+        InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
+            .uri("http://INVENTORY-SERVICE/api/inventory?skuCode={skuCodes}", skuCodesParam)
             .retrieve()
             .bodyToMono(InventoryResponse[].class)
             .block();
@@ -60,7 +62,9 @@ public class OrderService {
 
         if (allProductInStock) {
             orderRepository.save(order);
+            log.info("✅ Order placed successfully: {}", order.getOrderNumber());
         } else {
+            log.warn("❌ Product out of stock for skuCodes: {}", skuCodes);
             throw new IllegalArgumentException("Product is not in stock, please try again later");
         }
     }
