@@ -26,7 +26,7 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
-      ME_CONFIG_MONGODB_SERVER: mongodb  # ✅ FIXED: Use 'mongodb' not 'mongo'
+      ME_CONFIG_MONGODB_SERVER: mongodb  
       ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: admin123
     depends_on:
