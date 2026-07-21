@@ -1,1 +1,2 @@
-com\programmingtechie\apigateway\ApiGatewayApplication.class
+com\programmingtechie\config\SecurityConfig.class
+com\programmingtechie\ApiGatewayApplication.class
