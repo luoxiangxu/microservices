@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -11,6 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.programmingtechie.order_service.dto.InventoryResponse;
 import com.programmingtechie.order_service.dto.OrderLineItemsDto;
 import com.programmingtechie.order_service.dto.OrderRequest;
+import com.programmingtechie.order_service.event.OrderPlacedEvent;
 import com.programmingtechie.order_service.model.Order;
 import com.programmingtechie.order_service.model.OrderLineItems;
 import com.programmingtechie.order_service.repository.OrderRepository;
@@ -26,6 +28,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final WebClient.Builder webClientBuilder;
+    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     public String placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
@@ -45,7 +48,6 @@ public class OrderService {
         String skuCodesParam = String.join(",", skuCodes);
         log.info("Calling inventory service for skuCodes: {}", skuCodesParam);
 
-        // ✅ FIX: Use service name instead of localhost
         InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
             .uri("http://INVENTORY-SERVICE/api/inventory?skuCode={skuCodes}", skuCodesParam)
             .retrieve()
@@ -62,10 +64,11 @@ public class OrderService {
 
         if (allProductInStock) {
             orderRepository.save(order);
-            log.info("✅ Order placed successfully: {}", order.getOrderNumber());
+            kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
+            log.info("Order placed successfully: {}", order.getOrderNumber());
             return "Order placed successfully";
         } else {
-            log.warn("❌ Product out of stock for skuCodes: {}", skuCodes);
+            log.warn("Product out of stock for skuCodes: {}", skuCodes);
             throw new IllegalArgumentException("Product is not in stock, please try again later");
         }
     }
